@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="webinar-cmmn" default="deploy.jboss">
+<project name="webinar-cmmn" default="deploy.wildfly">
 
 	<property file="build.properties" />
 	<property file="${user.home}/.camunda/build.properties" />
 	<property name="target.dir" value="target" />
 
-	<condition property="mvn.executable" value="mvn.bat" else="mvn">
+	<condition property="mvn.executable" value="mvn.cmd" else="mvn">
 		<os family="windows"/>
 	</condition>
 
@@ -34,4 +34,12 @@
 		<delete file="${deploy.tomcat.dir}/${ant.project.name}.war" />
 	</target>
 	
+	<target name="deploy.wildfly" depends="package.mvn" description="Copies the process application to the deployment directory defined in '${basedir}/build.properties' or '${user.home}/.camunda/build.properties'">
+		<fail unless="deploy.wildfly.dir" message="No deployment folder has been configured. Please copy the file '${basedir}/build.properties.example' to '${basedir}/build.properties' or '${user.home}/.camunda/build.properties' and change it according to your environment." />
+		<copy file="${target.dir}/${ant.project.name}.war" todir="${deploy.wildfly.dir}" />
+	</target>
+
+	<target name="undeploy.wildfly" description="Deletes the process application from the deployment directory defined in '${basedir}/build.properties' or '${user.home}/.camunda/build.properties'">
+		<delete file="${deploy.wildfly.dir}/${ant.project.name}.war" />
+	</target>
 </project>
