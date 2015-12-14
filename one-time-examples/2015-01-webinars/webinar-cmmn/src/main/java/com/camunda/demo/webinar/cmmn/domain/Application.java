@@ -10,6 +10,7 @@ public class Application {
   private String customerName;
   
   private boolean smoker;
+  private boolean sportsman;
   
   public Application() {
     id = UUID.randomUUID().toString();
@@ -47,5 +48,13 @@ public class Application {
   public void setSmoker(boolean smoker) {
     this.smoker = smoker;
   }
+
+public boolean isSportsman() {
+	return sportsman;
+}
+
+public void setSportsman(boolean sportsman) {
+	this.sportsman = sportsman;
+}
 
 }
