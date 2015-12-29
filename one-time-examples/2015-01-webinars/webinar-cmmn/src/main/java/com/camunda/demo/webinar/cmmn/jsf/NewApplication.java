@@ -13,7 +13,11 @@ import org.camunda.bpm.engine.variable.Variables.SerializationDataFormats;
 import com.camunda.demo.webinar.cmmn.Constants;
 import com.camunda.demo.webinar.cmmn.domain.Application;
 
-
+/**
+ * Klasse zum anlegen von neuen Anträgen
+ * @author Admin
+ *
+ */
 @Named
 @SessionScoped
 public class NewApplication implements Serializable {
@@ -22,12 +26,12 @@ public class NewApplication implements Serializable {
 
     private Application application = new Application();
     
-    @Inject
+    //??
     private ProcessEngine processEngine;
 
-    @Inject
-    @Named
-    private CaseController caseController;
+
+    @SuppressWarnings("unused")
+	private CaseController caseController;
 
     @Inject
     @Named

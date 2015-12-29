@@ -1,7 +1,11 @@
 package com.camunda.demo.webinar.cmmn.domain;
 
 import java.util.UUID;
-
+/**
+ * Klasse für neue Anträge. 
+ * @author Admin
+ *
+ */
 public class Application {
 
   private String id;

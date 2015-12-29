@@ -1,11 +1,13 @@
 package com.camunda.demo.webinar.cmmn.jsf;
 
 import java.io.Serializable;
+
 import javax.enterprise.context.SessionScoped;
 import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpSession;
+
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.identity.User;
 
@@ -26,12 +28,17 @@ public class UserController implements Serializable {
     return userId != null;
   }
 
-  public String login() {
+/**
+ * Handle the login Process. if authorization is false it returns null. Else the page case-instances will be open
+ * @return case instances 
+ */
+public String login() {
     user = processEngine.getIdentityService().createUserQuery().userId(userId).singleResult();
-    if (user == null) {
-      return null;
+
+    if (processEngine.getIdentityService().checkPassword(userId, password)) {
+      return "case-instances";
     }
-    return "case-instances";
+    return null;
   }
 
   public String logout() {
