@@ -13,6 +13,7 @@ import javax.faces.context.FacesContext;
 import javax.inject.Named;
 
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.CaseService;
 import org.camunda.bpm.engine.history.HistoricCaseActivityInstance;
 import org.camunda.bpm.engine.repository.CaseDefinition;
 import org.camunda.bpm.engine.runtime.CaseExecution;
@@ -75,7 +76,11 @@ public class CaseController implements Serializable {
 
   public void initByCaseInstanceId(final String caseInstanceId) {
     reset();
-    application = (Application) engine.getCaseService().getVariable(caseInstanceId, Constants.VAR_NAME_APPLICATION);
+    
+    CaseService caseService = engine.getCaseService();
+    application = (Application) caseService.getVariable(caseInstanceId, Constants.VAR_NAME_APPLICATION);
+    
+    //application = (Application) engine.getCaseService().getVariable(caseInstanceId, Constants.VAR_NAME_APPLICATION);
     caseInstance = engine.getCaseService().createCaseInstanceQuery().caseInstanceId(caseInstanceId).singleResult();
     caseDefinition = engine.getRepositoryService().getCaseDefinition(caseInstance.getCaseDefinitionId());
     
