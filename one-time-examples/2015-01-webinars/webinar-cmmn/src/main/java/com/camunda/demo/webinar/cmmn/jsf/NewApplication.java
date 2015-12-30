@@ -26,11 +26,12 @@ public class NewApplication implements Serializable {
 
     private Application application = new Application();
     
-    //??
+    @Inject
     private ProcessEngine processEngine;
 
 
-    @SuppressWarnings("unused")
+    @Inject
+    @Named
 	private CaseController caseController;
 
     @Inject

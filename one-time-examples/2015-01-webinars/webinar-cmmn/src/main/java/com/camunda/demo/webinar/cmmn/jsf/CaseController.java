@@ -10,10 +10,13 @@ import java.util.Map.Entry;
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.inject.Produces;
 import javax.faces.context.FacesContext;
+import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.CaseService;
+import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseExecutionEntity;
+import org.camunda.bpm.engine.impl.cmmn.execution.CaseExecutionState;
 import org.camunda.bpm.engine.history.HistoricCaseActivityInstance;
 import org.camunda.bpm.engine.repository.CaseDefinition;
 import org.camunda.bpm.engine.runtime.CaseExecution;
@@ -31,7 +34,9 @@ public class CaseController implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private Application application;
+  @Inject
   private ProcessEngine engine;
+  
   
   private CaseInstance caseInstance;
 
@@ -39,6 +44,7 @@ public class CaseController implements Serializable {
   private Task selectedTask;
 
   private CaseDefinition caseDefinition;
+  @Inject
   private UserController currentUser;
 
   private Map<String, Object> taskFormVariables = new HashMap<String, Object>();
