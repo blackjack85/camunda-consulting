@@ -56,6 +56,9 @@ public class CaseController implements Serializable {
 
   private List<HistoricCaseActivityInstance> historicActivityInstances;
 
+  /**
+   * Load selected Task or Case and call the Method initByCaseInstanceID. This Method is called from case-form.jsf
+   */
   public void initCaseByParameters() {
     // TODO: Make sure it is not executed every time we klick RELOAD!
     Map<String, String> requestParameterMap = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap();
@@ -79,7 +82,10 @@ public class CaseController implements Serializable {
     activityForbiddenText = null;
     taskFormVariables = new HashMap<String, Object>();
   }
-
+  /**
+   * Init the selected Case by the ID and generate List for activ and enabled Case Executions.
+   * @param caseInstanceId
+   */
   public void initByCaseInstanceId(final String caseInstanceId) {
     reset();
     
@@ -96,6 +102,10 @@ public class CaseController implements Serializable {
     loadCaseInstanceStatus();
   }
 
+  /**
+   * Load all the case Executions and differs them between activ and enabled.
+   * all the executions are from the cmmn configuration file. 
+   */
   private void loadCaseInstanceStatus() {
     List<CaseExecution> caseExecutions = engine.getCaseService().createCaseExecutionQuery().caseInstanceId(caseInstance.getId()).list();
     for (CaseExecution caseExecution : caseExecutions) {
@@ -106,13 +116,18 @@ public class CaseController implements Serializable {
         enabledCaseExecutions.add(caseExecution);
       }
     }
-    
+    //load the completed Executions for the form
     historicActivityInstances = engine.getHistoryService().createHistoricCaseActivityInstanceQuery() //
           .caseInstanceId(caseInstance.getId()) //
           .completed() //
           .list();
   }
 
+  /**
+   * Start the selected CaseExcecution. change the state from Enabled to Active(running)
+   * @param execution
+   * @return
+   */
   public String executeCaseActivityAndSelectTask(CaseExecution execution) {
     engine.getCaseService().manuallyStartCaseExecution(execution.getId());
     
@@ -165,6 +180,11 @@ public class CaseController implements Serializable {
     return false;
   }
 
+  /**
+   * send the FormLink for the selected Execution as String
+   * @param caseExecution
+   * @return
+   */
   public String getTaskFormLink(CaseExecution caseExecution) {
     if (caseExecution.getActivityType()==CmmnModelConstants.CMMN_ELEMENT_HUMAN_TASK) {
       Task task = engine.getTaskService().createTaskQuery().caseExecutionId(caseExecution.getId()).initializeFormKeys().singleResult();
@@ -217,6 +237,10 @@ public class CaseController implements Serializable {
     return taskFormVariables;
   }
 
+  /**
+   * complete the selected Task(execution), set it after null and call the case-form.jsf with the caseInstanceID. 
+   * @return case-form with caseInstanceID
+   */
   public String completeSelectedTask() {
     
     HashMap<String, Object> variables = saveVariables();
@@ -233,6 +257,10 @@ public class CaseController implements Serializable {
     return "case-form.jsf?caseInstanceId=" + caseInstance.getId();
   }
 
+  /**
+   * Store the temporary data as "variables" to the selected Task in application. Method is called by saveSelectedTask
+   * @return
+   */
   private HashMap<String, Object> saveVariables() {
     HashMap<String, Object> variables = new HashMap<String, Object>();
     // workaround to use boolean variables
@@ -280,8 +308,6 @@ public class CaseController implements Serializable {
   public String getActivityForbiddenText() {
     return activityForbiddenText;
   }
-
-  ////////////////////////
   
   public List<String> getAccomplishedStages() {
     return new ArrayList<String>();

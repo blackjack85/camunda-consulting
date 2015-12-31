@@ -28,6 +28,10 @@ public class CaseListController implements Serializable {
 
   private ArrayList<CaseRow> rows;
 
+  /**
+   * load all cases stored in camunda and return a ArrayList
+   * @return
+   */
   public List<CaseRow> getRunningCases() {
     if (rows == null) {
       rows = new ArrayList<CaseRow>();
