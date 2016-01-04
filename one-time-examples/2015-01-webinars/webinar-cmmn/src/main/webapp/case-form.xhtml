@@ -16,11 +16,12 @@
 			<div class="page-header">
 				<h1>#{caseController.caseDefinition.name}</h1>
 				<p>
-						Application ID: #{caseController.application.id}
+						Application ID: #{caseController.application.id}#{caseController.treatmentRequest.id}
 						| Customer ID:
-						#{caseController.application.customerId} 
+						#{caseController.application.customerId}#{caseController.treatmentRequest.customerId} 
 						| Customer Name:
-						#{caseController.application.customerName} 			
+						#{caseController.application.customerName}#{caseController.treatmentRequest.customerName}
+						 			
 				</p>
 				<!-- 
 				<div>

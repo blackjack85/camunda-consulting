@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cmmn:definitions id="authorization-definition" name="Authorization"
+	targetNamespace="http://cmmn.org" xmlns:cmmn="http://www.omg.org/spec/CMMN/20131201/MODEL"
+	xmlns:camunda="http://camunda.org/schema/1.0/cmmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<cmmn:case id="authorization" name="Authorization">
+		<cmmn:casePlanModel autoComplete="true" name="Authorization"
+			id="_manual_authorization">
+			<cmmn:planItem id="PI_humanTaskDecide" definitionRef="humanTaskDecide" />
+			
+			<cmmn:planItem id="PI_milestoneApproved" definitionRef="milestoneApproved"
+				entryCriteriaRefs="sentryApproved" />
+			
+			<cmmn:planItem id="PI_milestoneRejected" definitionRef="milestoneRejected"
+				entryCriteriaRefs="sentryRejected" />
+			
+			<cmmn:planItem id="PI_processTaskDoctorRequest"
+				definitionRef="processTaskDoctorRequest" />
+			
+			<cmmn:planItem id="PI_humanTaskPrivatePatient" definitionRef="humanTaskPrivatePatient"
+				entryCriteriaRefs="sentryPrivatePatient" />
+
+
+			<!-- Sentries -->
+
+			<cmmn:sentry id="sentryPrivatePatient">
+				<cmmn:ifPart>
+					<cmmn:condition>
+						<cmmn:body>${treatmentRequest.privatePatient}</cmmn:body>
+					</cmmn:condition>
+				</cmmn:ifPart>
+			</cmmn:sentry>
+
+			<cmmn:sentry id="sentryRejected">
+				<cmmn:planItemOnPart sourceRef="PI_humanTaskDecide">
+					<cmmn:standardEvent>complete</cmmn:standardEvent>
+				</cmmn:planItemOnPart>
+				<cmmn:ifPart>
+					<cmmn:condition>
+						<cmmn:body>${!approved}</cmmn:body>
+					</cmmn:condition>
+				</cmmn:ifPart>
+			</cmmn:sentry>
+			
+			<cmmn:sentry id="sentryApproved">
+				<cmmn:planItemOnPart sourceRef="PI_humanTaskDecide">
+					<cmmn:standardEvent>complete</cmmn:standardEvent>
+				</cmmn:planItemOnPart>
+				<cmmn:ifPart>
+					<cmmn:condition>
+						<cmmn:body>${approved}</cmmn:body>
+					</cmmn:condition>
+				</cmmn:ifPart>
+			</cmmn:sentry>
+			
+
+			<!-- Plan Item Definitions -->
+			
+			<cmmn:humanTask id="humanTaskPrivatePatient" name="Kunde ist PrivatPatient"
+				isBlocking="true" camunda:assignee="demo" camunda:formKey="app:form-missing.jsf" />
+
+			<cmmn:humanTask id="humanTaskDecide" name="decide on application"
+				isBlocking="true" camunda:assignee="demo" camunda:formKey="app:form-decide-application.jsf">
+				<cmmn:extensionElements>
+					<camunda:caseExecutionListener event="complete"
+						class="com.camunda.demo.webinar.cmmn.listener.DisableRemainingActivitiesListener" />
+				</cmmn:extensionElements>
+				<cmmn:defaultControl>
+					<cmmn:manualActivationRule>
+						<cmmn:condition>
+							<cmmn:body>${false}</cmmn:body>
+						</cmmn:condition>
+					</cmmn:manualActivationRule>
+				</cmmn:defaultControl>
+			</cmmn:humanTask>
+			
+
+			<cmmn:processTask id="processTaskDoctorRequest"
+				name="doctor information request" processRef="DoctorInformationRequest"
+				isBlocking="true" />
+
+			<cmmn:milestone id="milestoneApproved" name="approved">
+				<cmmn:extensionElements>
+					<camunda:caseExecutionListener event="occur"
+						class="com.camunda.demo.webinar.cmmn.listener.CompleteCaseAndResumeProcessListener" />
+				</cmmn:extensionElements>
+			</cmmn:milestone>
+			
+			<cmmn:milestone id="milestoneRejected" name="rejected">
+				<cmmn:extensionElements>
+					<camunda:caseExecutionListener event="occur"
+						class="com.camunda.demo.webinar.cmmn.listener.CompleteCaseAndResumeProcessListener" />
+				</cmmn:extensionElements>
+			</cmmn:milestone>
+			
+		</cmmn:casePlanModel>
+	</cmmn:case>
+</cmmn:definitions>
+

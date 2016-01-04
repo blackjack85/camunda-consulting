@@ -13,6 +13,7 @@ import org.camunda.bpm.engine.runtime.CaseInstance;
 
 import com.camunda.demo.webinar.cmmn.Constants;
 import com.camunda.demo.webinar.cmmn.domain.Application;
+import com.camunda.demo.webinar.cmmn.domain.TreatmentRequest;
 
 @Named
 public class CaseListController implements Serializable {
@@ -37,9 +38,19 @@ public class CaseListController implements Serializable {
       rows = new ArrayList<CaseRow>();
       List<CaseInstance> caseInstances = processEngine.getCaseService().createCaseInstanceQuery().active().list();
       for (CaseInstance caseInstance : caseInstances) {
+    
         Application application = (Application) processEngine.getCaseService().getVariable(caseInstance.getId(), Constants.VAR_NAME_APPLICATION);
+        TreatmentRequest treatmentRequest = (TreatmentRequest) processEngine.getCaseService().getVariable(caseInstance.getId(), Constants.VAR_NAME_TREATMENTREQUEST);
+        
         CaseDefinition caseDefinition = processEngine.getRepositoryService().getCaseDefinition(caseInstance.getCaseDefinitionId());
-        rows.add(new CaseRow(caseInstance, caseDefinition, application));
+        if(application != null)
+        {
+        	rows.add(new CaseRow(caseInstance, caseDefinition, application, null));
+        }
+        else if(treatmentRequest != null)
+        {
+        	rows.add(new CaseRow(caseInstance, caseDefinition,null ,treatmentRequest));
+        }
       }
     }
     return rows;

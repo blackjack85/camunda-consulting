@@ -26,311 +26,357 @@ import org.camunda.bpm.model.cmmn.impl.CmmnModelConstants;
 
 import com.camunda.demo.webinar.cmmn.Constants;
 import com.camunda.demo.webinar.cmmn.domain.Application;
+import com.camunda.demo.webinar.cmmn.domain.TreatmentRequest;
 
 @Named
 @SessionScoped
 public class CaseController implements Serializable {
 
-  private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-  private Application application;
-  @Inject
-  private ProcessEngine engine;
-  
-  
-  private CaseInstance caseInstance;
+	private Application application;
+	private TreatmentRequest treatmentRequest;
+	@Inject
+	private ProcessEngine engine;
 
-  //human task
-  private Task selectedTask;
+	private CaseInstance caseInstance;
 
-  private CaseDefinition caseDefinition;
-  @Inject
-  private UserController currentUser;
+	// human task
+	private Task selectedTask;
 
-  private Map<String, Object> taskFormVariables = new HashMap<String, Object>();
+	private CaseDefinition caseDefinition;
+	@Inject
+	private UserController currentUser;
 
-  private String activityForbiddenText;
+	private Map<String, Object> taskFormVariables = new HashMap<String, Object>();
 
-  private List<CaseExecution> activeCaseExecutions;
-  private List<CaseExecution> enabledCaseExecutions;
+	private String activityForbiddenText;
 
-  private List<HistoricCaseActivityInstance> historicActivityInstances;
+	private List<CaseExecution> activeCaseExecutions;
+	private List<CaseExecution> enabledCaseExecutions;
 
-  /**
-   * Load selected Task or Case and call the Method initByCaseInstanceID. This Method is called from case-form.jsf
-   */
-  public void initCaseByParameters() {
-    // TODO: Make sure it is not executed every time we klick RELOAD!
-    Map<String, String> requestParameterMap = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap();
-    String taskId = requestParameterMap.get("taskId");
-    String caseInstanceId = requestParameterMap.get("caseInstanceId");
-    if (taskId != null) {
-      selectTask(taskId);
-      Task loadedTask = selectedTask;
-      initByCaseInstanceId(selectedTask.getCaseInstanceId()); // does a reset!
-      selectedTask = loadedTask;
-    } else if (caseInstanceId != null) {
-      initByCaseInstanceId(caseInstanceId);
-    }
+	private List<HistoricCaseActivityInstance> historicActivityInstances;
 
-  }
+	/**
+	 * Load selected Task or Case and call the Method initByCaseInstanceID. This
+	 * Method is called from case-form.jsf
+	 */
+	public void initCaseByParameters() {
+		// TODO: Make sure it is not executed every time we klick RELOAD!
+		Map<String, String> requestParameterMap = FacesContext
+				.getCurrentInstance().getExternalContext()
+				.getRequestParameterMap();
+		String taskId = requestParameterMap.get("taskId");
+		String caseInstanceId = requestParameterMap.get("caseInstanceId");
+		if (taskId != null) {
+			selectTask(taskId);
+			Task loadedTask = selectedTask;
+			initByCaseInstanceId(selectedTask.getCaseInstanceId()); // does a
+																	// reset!
+			selectedTask = loadedTask;
+		} else if (caseInstanceId != null) {
+			initByCaseInstanceId(caseInstanceId);
+		}
 
-  private void reset() {
-    selectedTask = null;
-    caseInstance = null;
-    caseDefinition = null;
-    activityForbiddenText = null;
-    taskFormVariables = new HashMap<String, Object>();
-  }
-  /**
-   * Init the selected Case by the ID and generate List for activ and enabled Case Executions.
-   * @param caseInstanceId
-   */
-  public void initByCaseInstanceId(final String caseInstanceId) {
-    reset();
-    
-    CaseService caseService = engine.getCaseService();
-    application = (Application) caseService.getVariable(caseInstanceId, Constants.VAR_NAME_APPLICATION);
-    
-    //application = (Application) engine.getCaseService().getVariable(caseInstanceId, Constants.VAR_NAME_APPLICATION);
-    caseInstance = engine.getCaseService().createCaseInstanceQuery().caseInstanceId(caseInstanceId).singleResult();
-    caseDefinition = engine.getRepositoryService().getCaseDefinition(caseInstance.getCaseDefinitionId());
-    
-    activeCaseExecutions = new ArrayList<CaseExecution>();
-    enabledCaseExecutions = new ArrayList<CaseExecution>();
-    
-    loadCaseInstanceStatus();
-  }
+	}
 
-  /**
-   * Load all the case Executions and differs them between activ and enabled.
-   * all the executions are from the cmmn configuration file. 
-   */
-  private void loadCaseInstanceStatus() {
-    List<CaseExecution> caseExecutions = engine.getCaseService().createCaseExecutionQuery().caseInstanceId(caseInstance.getId()).list();
-    for (CaseExecution caseExecution : caseExecutions) {
-      if (caseExecution.isActive()) {
-        activeCaseExecutions.add(caseExecution);
-      }
-      else if (caseExecution.isEnabled()) {
-        enabledCaseExecutions.add(caseExecution);
-      }
-    }
-    //load the completed Executions for the form
-    historicActivityInstances = engine.getHistoryService().createHistoricCaseActivityInstanceQuery() //
-          .caseInstanceId(caseInstance.getId()) //
-          .completed() //
-          .list();
-  }
+	private void reset() {
+		selectedTask = null;
+		caseInstance = null;
+		caseDefinition = null;
+		activityForbiddenText = null;
+		taskFormVariables = new HashMap<String, Object>();
+	}
 
-  /**
-   * Start the selected CaseExcecution. change the state from Enabled to Active(running)
-   * @param execution
-   * @return
-   */
-  public String executeCaseActivityAndSelectTask(CaseExecution execution) {
-    engine.getCaseService().manuallyStartCaseExecution(execution.getId());
-    
-    List<Task> tasks = engine.getTaskService().createTaskQuery().caseExecutionId(execution.getId()).list();
-    if (tasks.size() > 0) {
-      selectedTask = tasks.get(0);
-    }
-    
-    // now enabled/active activities have changed
-    refreshCaseInfo();
-    
-    // Heuristik: Den letzten Task zum aktuellen Case selektieren - eine
-    // Aktivität könnte ja auch
-    // ein Prozess sein der keine oder mehrere Aufgaben erzeugt!
-//    final List<Task> tasks = engine.getTaskService().createTaskQuery().caseInstanceId(caseInstance.getId()).orderByTaskCreateTime().desc().list();
-//    if (tasks.size() > 0) {
-//      selectedTask = tasks.get(0);
-////      claimSelectedAskForCurrentUser();
-//    }
-//    refreshCaseInfo();
-    return "";
-    //return getTaskFormLink(selectedTask.getId());
-  }
+	/**
+	 * Init the selected Case by the ID and generate List for activ and enabled
+	 * Case Executions.
+	 * 
+	 * @param caseInstanceId
+	 */
+	public void initByCaseInstanceId(final String caseInstanceId) {
+		reset();
 
-  public boolean isRunning(String activityId) {
-//    for (Task task : caseInstanceInfo.getActiveTasks()) {
-//      if (task.getTaskDefinitionKey().equals(activityId)) {
-//        return true;
-//      }
-//    }
-//    for (ProcessInstance pi : caseInstanceInfo.getActiveProcesses()) {
-//      if (pi.getProcessDefinitionId().equals(activityId)) {
-//        return true;
-//      }
-//    }
-    return false;
-  }
+		CaseService caseService = engine.getCaseService();
+		application = (Application) caseService.getVariable(caseInstanceId,
+				Constants.VAR_NAME_APPLICATION);
 
-  public boolean isFinished(String activityId) {
-//    for (HistoricTaskInstance task : caseInstanceInfo.getHistoricTasks()) {
-//      if (task.getTaskDefinitionKey().equals(activityId)) {
-//        return true;
-//      }
-//    }
-//    for (HistoricProcessInstance pi : caseInstanceInfo.getHistoricProcesses()) {
-//      if (pi.getProcessDefinitionId().equals(activityId)) {
-//        return true;
-//      }
-//    }
-    return false;
-  }
+		treatmentRequest = (TreatmentRequest)caseService.getVariable(caseInstanceId,
+				Constants.VAR_NAME_TREATMENTREQUEST);
 
-  /**
-   * send the FormLink for the selected Execution as String
-   * @param caseExecution
-   * @return
-   */
-  public String getTaskFormLink(CaseExecution caseExecution) {
-    if (caseExecution.getActivityType()==CmmnModelConstants.CMMN_ELEMENT_HUMAN_TASK) {
-      Task task = engine.getTaskService().createTaskQuery().caseExecutionId(caseExecution.getId()).initializeFormKeys().singleResult();
-      return getFormLink(task);
-    }
-    else return null;
-  }
-  
-  public String getFormLink(Task task) {
-    if (task.getCaseInstanceId()==null ){
-      // no task from case
-      return "/../camunda/app/tasklist/default/#/?task="+task.getId()+"&detailsTab=task-detail-form";
-    }
-    
-    String formKey = task.getFormKey();
-    if (formKey == null) {
-      return null;
-    }    
-    return formKey.replaceAll("app:", "") + "?taskId=" + task.getId();    
-  }
+		// application = (Application)
+		// engine.getCaseService().getVariable(caseInstanceId,
+		// Constants.VAR_NAME_APPLICATION);
+		caseInstance = engine.getCaseService().createCaseInstanceQuery()
+				.caseInstanceId(caseInstanceId).singleResult();
+		caseDefinition = engine.getRepositoryService().getCaseDefinition(
+				caseInstance.getCaseDefinitionId());
 
-  public void refreshCaseInfo() {
-    initByCaseInstanceId(caseInstance.getId());
-  }
+		activeCaseExecutions = new ArrayList<CaseExecution>();
+		enabledCaseExecutions = new ArrayList<CaseExecution>();
 
-  public void deselectTask() {
-    selectedTask = null;
-  }
+		loadCaseInstanceStatus();
+	}
 
-  public void selectTask(final String taskId) {
-    selectedTask = engine.getTaskService().createTaskQuery().taskId(taskId).singleResult();
-    claimSelectedTaskForCurrentUser();
-  }
+	/**
+	 * Load all the case Executions and differs them between activ and enabled.
+	 * all the executions are from the cmmn configuration file.
+	 */
+	private void loadCaseInstanceStatus() {
+		List<CaseExecution> caseExecutions = engine.getCaseService()
+				.createCaseExecutionQuery()
+				.caseInstanceId(caseInstance.getId()).list();
+		for (CaseExecution caseExecution : caseExecutions) {
+			if (caseExecution.isActive()) {
+				activeCaseExecutions.add(caseExecution);
+			} else if (caseExecution.isEnabled()) {
+				enabledCaseExecutions.add(caseExecution);
+			}
+		}
+		// load the completed Executions for the form
+		historicActivityInstances = engine.getHistoryService()
+				.createHistoricCaseActivityInstanceQuery() //
+				.caseInstanceId(caseInstance.getId()) //
+				.completed() //
+				.list();
+	}
 
-  private void claimSelectedTaskForCurrentUser() {
-    // unclaim (tink about it - at the moment we need it as otherwise we
-    // canno claim something already assigned to somebody else -> exception)
-    engine.getTaskService().claim(selectedTask.getId(), null);
-    // and claim for me
-    engine.getTaskService().claim(selectedTask.getId(), currentUser.getUserId());
-  }
+	/**
+	 * Start the selected CaseExcecution. change the state from Enabled to
+	 * Active(running)
+	 * 
+	 * @param execution
+	 * @return
+	 */
+	public String executeCaseActivityAndSelectTask(CaseExecution execution) {
+		engine.getCaseService().manuallyStartCaseExecution(execution.getId());
 
-  @Produces
-  @Named("application")
-  public Application getApplicationForSelectedCaseInstance() {
-    return application;
-  }
+		List<Task> tasks = engine.getTaskService().createTaskQuery()
+				.caseExecutionId(execution.getId()).list();
+		if (tasks.size() > 0) {
+			selectedTask = tasks.get(0);
+		}
 
-  public Map<String, Object> getTaskFormVariables() {
-    return taskFormVariables;
-  }
+		// now enabled/active activities have changed
+		refreshCaseInfo();
 
-  /**
-   * complete the selected Task(execution), set it after null and call the case-form.jsf with the caseInstanceID. 
-   * @return case-form with caseInstanceID
-   */
-  public String completeSelectedTask() {
-    
-    HashMap<String, Object> variables = saveVariables();
-    
-    // complete task (variables are ignored due to bug https://app.camunda.com/jira/browse/CAM-3261)
-    // hence variables are saved beforehand (workaround)
-    engine.getTaskService().complete(selectedTask.getId(), variables);
+		// Heuristik: Den letzten Task zum aktuellen Case selektieren - eine
+		// Aktivität könnte ja auch
+		// ein Prozess sein der keine oder mehrere Aufgaben erzeugt!
+		// final List<Task> tasks =
+		// engine.getTaskService().createTaskQuery().caseInstanceId(caseInstance.getId()).orderByTaskCreateTime().desc().list();
+		// if (tasks.size() > 0) {
+		// selectedTask = tasks.get(0);
+		// // claimSelectedAskForCurrentUser();
+		// }
+		// refreshCaseInfo();
+		return "";
+		// return getTaskFormLink(selectedTask.getId());
+	}
 
-    // reset task form
-    taskFormVariables = new HashMap<String, Object>();
-    refreshCaseInfo();
-    selectedTask = null;
+	public boolean isRunning(String activityId) {
+		// for (Task task : caseInstanceInfo.getActiveTasks()) {
+		// if (task.getTaskDefinitionKey().equals(activityId)) {
+		// return true;
+		// }
+		// }
+		// for (ProcessInstance pi : caseInstanceInfo.getActiveProcesses()) {
+		// if (pi.getProcessDefinitionId().equals(activityId)) {
+		// return true;
+		// }
+		// }
+		return false;
+	}
 
-    return "case-form.jsf?caseInstanceId=" + caseInstance.getId();
-  }
+	public boolean isFinished(String activityId) {
+		// for (HistoricTaskInstance task : caseInstanceInfo.getHistoricTasks())
+		// {
+		// if (task.getTaskDefinitionKey().equals(activityId)) {
+		// return true;
+		// }
+		// }
+		// for (HistoricProcessInstance pi :
+		// caseInstanceInfo.getHistoricProcesses()) {
+		// if (pi.getProcessDefinitionId().equals(activityId)) {
+		// return true;
+		// }
+		// }
+		return false;
+	}
 
-  /**
-   * Store the temporary data as "variables" to the selected Task in application. Method is called by saveSelectedTask
-   * @return
-   */
-  private HashMap<String, Object> saveVariables() {
-    HashMap<String, Object> variables = new HashMap<String, Object>();
-    // workaround to use boolean variables
-    for (Entry<String, Object> entry : taskFormVariables.entrySet()) {
-      if (entry.getValue()!=null && ("true".equals(entry.getValue()) || "false".equals(entry.getValue()))) {
-        variables.put(entry.getKey(), Boolean.valueOf((String)entry.getValue()));        
-      }
-      else {
-        variables.put(entry.getKey(), entry.getValue());
-      }
-    }
-    // save changed to variables object bound to JSF UI
-    variables.put(Constants.VAR_NAME_APPLICATION, application);
-    
-    engine.getCaseService().setVariables(selectedTask.getCaseExecutionId(), variables);
-    return variables;
-  }
+	/**
+	 * send the FormLink for the selected Execution as String
+	 * 
+	 * @param caseExecution
+	 * @return
+	 */
+	public String getTaskFormLink(CaseExecution caseExecution) {
+		if (caseExecution.getActivityType() == CmmnModelConstants.CMMN_ELEMENT_HUMAN_TASK) {
+			Task task = engine.getTaskService().createTaskQuery()
+					.caseExecutionId(caseExecution.getId())
+					.initializeFormKeys().singleResult();
+			return getFormLink(task);
+		} else
+			return null;
+	}
 
-  public void saveSelectedTask() {
-    saveVariables();
-//    engine.getCaseService().setVariable(selectedTask.getCaseExecutionId(), Constants.VAR_NAME_APPLICATION, application);
-//    engine.getCaseService().setVariable(selectedTask.getCaseExecutionId(), Constants.VAR_NAME_EVALUATION_COMMENTS, application);
-  }
+	public String getFormLink(Task task) {
+		if (task.getCaseInstanceId() == null) {
+			// no task from case
+			return "/../camunda/app/tasklist/default/#/?task=" + task.getId()
+					+ "&detailsTab=task-detail-form";
+		}
 
-  public String getProcessDefinitionName(final String processDefinitionId) {
-    return engine.getRepositoryService().createProcessDefinitionQuery().processDefinitionId(processDefinitionId).singleResult().getName();
-  }
+		String formKey = task.getFormKey();
+		if (formKey == null) {
+			return null;
+		}
+		return formKey.replaceAll("app:", "") + "?taskId=" + task.getId();
+	}
 
-  public CaseInstance getCaseInstance() {
-    return caseInstance;
-  }
+	public void refreshCaseInfo() {
+		initByCaseInstanceId(caseInstance.getId());
+	}
 
-  public Application getApplication() {
-    return application;
-  }
+	public void deselectTask() {
+		selectedTask = null;
+	}
 
-  public Task getSelectedTask() {
-    return selectedTask;
-  }
+	public void selectTask(final String taskId) {
+		selectedTask = engine.getTaskService().createTaskQuery().taskId(taskId)
+				.singleResult();
+		claimSelectedTaskForCurrentUser();
+	}
 
-  public CaseDefinition getCaseDefinition() {
-    return caseDefinition;
-  }
+	private void claimSelectedTaskForCurrentUser() {
+		// unclaim (tink about it - at the moment we need it as otherwise we
+		// canno claim something already assigned to somebody else -> exception)
+		engine.getTaskService().claim(selectedTask.getId(), null);
+		// and claim for me
+		engine.getTaskService().claim(selectedTask.getId(),
+				currentUser.getUserId());
+	}
 
-  public String getActivityForbiddenText() {
-    return activityForbiddenText;
-  }
-  
-  public List<String> getAccomplishedStages() {
-    return new ArrayList<String>();
-  }
-  
-  public String getCurrentStage() {
-    return "STAGE";
-  }
-  
-  public List<String> getFutureStages() {
-    return new ArrayList<String>();
-  }
-  
-  public List<CaseExecution> getActiveCaseExecutions() {
-   return activeCaseExecutions; 
-  }
-  
-  public List<CaseExecution> getEnabledCaseExecutions() {
-    return enabledCaseExecutions;
-  } 
-  
-  public List<HistoricCaseActivityInstance> getHistoricCaseActivityInstances() {
-    return historicActivityInstances;
-  } 
-  
+	@Produces
+	@Named("application")
+	public Application getApplicationForSelectedCaseInstance() {
+		return application;
+	}
+
+	public Map<String, Object> getTaskFormVariables() {
+		return taskFormVariables;
+	}
+
+	/**
+	 * complete the selected Task(execution), set it after null and call the
+	 * case-form.jsf with the caseInstanceID.
+	 * 
+	 * @return case-form with caseInstanceID
+	 */
+	public String completeSelectedTask() {
+
+		HashMap<String, Object> variables = saveVariables();
+
+		// complete task (variables are ignored due to bug
+		// https://app.camunda.com/jira/browse/CAM-3261)
+		// hence variables are saved beforehand (workaround)
+		engine.getTaskService().complete(selectedTask.getId(), variables);
+
+		// reset task form
+		taskFormVariables = new HashMap<String, Object>();
+		refreshCaseInfo();
+		selectedTask = null;
+
+		return "case-form.jsf?caseInstanceId=" + caseInstance.getId();
+	}
+
+	/**
+	 * Store the temporary data as "variables" to the selected Task in
+	 * application. Method is called by saveSelectedTask
+	 * 
+	 * @return
+	 */
+	private HashMap<String, Object> saveVariables() {
+		HashMap<String, Object> variables = new HashMap<String, Object>();
+		// workaround to use boolean variables
+		for (Entry<String, Object> entry : taskFormVariables.entrySet()) {
+			if (entry.getValue() != null
+					&& ("true".equals(entry.getValue()) || "false".equals(entry
+							.getValue()))) {
+				variables.put(entry.getKey(),
+						Boolean.valueOf((String) entry.getValue()));
+			} else {
+				variables.put(entry.getKey(), entry.getValue());
+			}
+		}
+		// save changed to variables object bound to JSF UI
+		variables.put(Constants.VAR_NAME_APPLICATION, application);
+
+		engine.getCaseService().setVariables(selectedTask.getCaseExecutionId(),
+				variables);
+		return variables;
+	}
+
+	public void saveSelectedTask() {
+		saveVariables();
+		// engine.getCaseService().setVariable(selectedTask.getCaseExecutionId(),
+		// Constants.VAR_NAME_APPLICATION, application);
+		// engine.getCaseService().setVariable(selectedTask.getCaseExecutionId(),
+		// Constants.VAR_NAME_EVALUATION_COMMENTS, application);
+	}
+
+	public String getProcessDefinitionName(final String processDefinitionId) {
+		return engine.getRepositoryService().createProcessDefinitionQuery()
+				.processDefinitionId(processDefinitionId).singleResult()
+				.getName();
+	}
+
+	public CaseInstance getCaseInstance() {
+		return caseInstance;
+	}
+
+	public Application getApplication() {
+		return application;
+	}
+
+	public Task getSelectedTask() {
+		return selectedTask;
+	}
+
+	public CaseDefinition getCaseDefinition() {
+		return caseDefinition;
+	}
+
+	public String getActivityForbiddenText() {
+		return activityForbiddenText;
+	}
+
+	public List<String> getAccomplishedStages() {
+		return new ArrayList<String>();
+	}
+
+	public String getCurrentStage() {
+		return "STAGE";
+	}
+
+	public List<String> getFutureStages() {
+		return new ArrayList<String>();
+	}
+
+	public List<CaseExecution> getActiveCaseExecutions() {
+		return activeCaseExecutions;
+	}
+
+	public List<CaseExecution> getEnabledCaseExecutions() {
+		return enabledCaseExecutions;
+	}
+
+	public List<HistoricCaseActivityInstance> getHistoricCaseActivityInstances() {
+		return historicActivityInstances;
+	}
+
+	public TreatmentRequest getTreatmentRequest() {
+		return treatmentRequest;
+	}
+
 }

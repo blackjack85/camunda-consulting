@@ -8,16 +8,53 @@ import org.camunda.bpm.engine.variable.Variables;
 
 import com.camunda.demo.webinar.cmmn.Constants;
 
+
+
 public class CreateCaseInstanceDelegate implements JavaDelegate {
 
-  @Override
-  public void execute(DelegateExecution execution) throws Exception {
-    VariableMap variables = Variables.createVariables() //
-        .putValue(Constants.VAR_NAME_PROCESS_INSTANCE_ID, execution.getProcessInstanceId())
-        .putValue(Constants.VAR_NAME_APPLICATION, execution.getVariableLocalTyped(Constants.VAR_NAME_APPLICATION));
-    
-    CaseInstance caseInstance = execution.getProcessEngineServices().getCaseService().createCaseInstanceByKey(Constants.CASE_DEFITION_KEY_UNDERWRITING, variables);
-    execution.setVariable(Constants.VAR_NAME_CASE_INSTANCE_ID, caseInstance.getCaseInstanceId());
-  }
+	@Override
+	public void execute(DelegateExecution execution) throws Exception {
+		VariableMap variables = Variables
+				.createVariables()
+				.putValue(Constants.VAR_NAME_PROCESS_INSTANCE_ID,
+						execution.getProcessInstanceId())
+				.putValue(
+						Constants.VAR_NAME_APPLICATION,
+						execution
+								.getVariableLocalTyped(Constants.VAR_NAME_APPLICATION));
+		
+		if(variables.containsKey(Constants.VAR_NAME_APPLICATION) && !variables.containsValue(null))
+		{
+			CaseInstance caseInstance = execution
+					.getProcessEngineServices()
+					.getCaseService()
+					.createCaseInstanceByKey(
+							Constants.CASE_DEFITION_KEY_UNDERWRITING, variables);
+			execution.setVariable(Constants.VAR_NAME_CASE_INSTANCE_ID,
+					caseInstance.getCaseInstanceId());
+		}
+
+		
+		
+		variables = Variables
+				.createVariables()
+				.putValue(Constants.VAR_NAME_PROCESS_INSTANCE_ID,
+						execution.getProcessInstanceId())
+				.putValue(
+						Constants.VAR_NAME_TREATMENTREQUEST,
+						execution
+								.getVariableLocalTyped(Constants.VAR_NAME_TREATMENTREQUEST));
+		
+		if(variables.containsKey(Constants.VAR_NAME_TREATMENTREQUEST) && !variables.containsValue(null))
+		{
+			CaseInstance caseInstance1 = execution
+					.getProcessEngineServices()
+					.getCaseService()
+					.createCaseInstanceByKey(Constants.CASE_DEFITION_KEY_AUTHORIZATION, variables);
+			
+			execution.setVariable(Constants.VAR_NAME_CASE_INSTANCE_ID,
+					caseInstance1.getCaseInstanceId());
+		}
+	}
 
 }
