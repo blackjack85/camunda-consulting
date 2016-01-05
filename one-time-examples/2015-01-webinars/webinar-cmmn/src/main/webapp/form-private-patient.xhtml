@@ -1,0 +1,25 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:h="http://java.sun.com/jsf/html"
+	template="case-form.xhtml">
+
+	<ui:define name="task">
+
+		<P>Kunde ist Privat seit? </P>
+		
+		<div>
+				<h:inputText value="#{caseController.treatmentRequest.startOfInsurance}" />
+		</div>
+		<!--  
+		<div>
+				<h:inputTextarea rows="6" cols="50" value="#{caseController.taskFormVariables['evaluationComments']}" />
+		</div>
+		-->		
+		<br />
+		<br />
+		
+				
+
+	</ui:define>	
+</ui:composition>

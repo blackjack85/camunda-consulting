@@ -8,6 +8,7 @@ public class TreatmentRequest {
 	private boolean privatePatient;
 	private String customerId;
 	private String customerName;
+	private String startOfInsurance;
 	
 
 	public TreatmentRequest()
@@ -39,6 +40,14 @@ public class TreatmentRequest {
 	}
 	public void setCustomerName(String customerName) {
 		this.customerName = customerName;
+	}
+
+	public String getStartOfInsurance() {
+		return startOfInsurance;
+	}
+
+	public void setStartOfInsurance(String startOfInsurance) {
+		this.startOfInsurance = startOfInsurance;
 	}
 	
 	

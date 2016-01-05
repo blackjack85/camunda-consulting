@@ -56,7 +56,7 @@
 			<!-- Plan Item Definitions -->
 			
 			<cmmn:humanTask id="humanTaskPrivatePatient" name="Kunde ist PrivatPatient"
-				isBlocking="true" camunda:assignee="demo" camunda:formKey="app:form-missing.jsf" />
+				isBlocking="true" camunda:assignee="demo" camunda:formKey="app:form-private-patient.jsf" />
 
 			<cmmn:humanTask id="humanTaskDecide" name="decide on application"
 				isBlocking="true" camunda:assignee="demo" camunda:formKey="app:form-decide-application.jsf">
